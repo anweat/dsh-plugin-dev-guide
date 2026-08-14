@@ -104,6 +104,12 @@ dsh plugin --profile web add dsh-web-search-pro
 
 可选：发布后补一个 Git tag 并与 GitHub Release 关联（`npm version patch` 自动打 tag）。
 
+**名字被占用？用 scoped 包名**：无 scope 的包名（如 `dsh-browser`）可能被他人抢先注册（npm 无法申诉）。
+改用 `@<你的npm账号>/<包名>`（如 `@anweat/dsh-browser`）即可：scoped 命名空间归账号所有、**永不冲突**，且保留原名字。
+改动点：① 插件 `package.json` 的 `name`；② `cordis.patch.yml` 中 `name:` 引用（YAML 中加引号 `name: '@scope/pkg'`）；
+③ 依赖该插件的包（`dependencies` + 重新 `pnpm install` 更新 lockfile）。发布时 scoped 包必须显式 `--access public`
+（CI workflow 模板已带）。安装命令变为 `dsh plugin --profile web add @scope/pkg`。
+
 > 注意：npm 对 `@scope` 包默认 restricted，无 scope 的包（如 `dsh-web-search-pro`）直接 public，无需 access 参数。
 
 ## 3.5 自动化发布：GitHub Actions 全自动接管（推荐）
@@ -234,6 +240,10 @@ Remove-Item -Recurse -Force <DSH_HOME>/profiles/dsh-plugin-test
 - **CI 中 `npm publish dist/*.tgz` 报 git ls-remote 错误**：glob 展开后 `dist/x.tgz` 不带 `./` 前缀会被 npm 11
   当成 GitHub shorthand（`user/repo` 模式）去 ssh 拉取；必须写 `npm publish ./dist/*.tgz`。
 - **`dsh plugin add` 报 `ERR_PNPM_ADDING_TO_ROOT`**：profile 是 workspace root，命令加 `-w`（见 §6.5）。
+- **发布成功但 pnpm 装不到（"not in the npm registry"）**：npm registry 的 abbreviated metadata（`Accept: application/vnd.npm.install-v1+json`，pnpm 等安装器用的就是它）
+  在 publish 后约 1–2 分钟才生成，期间 `npm view` / 完整 metadata 正常、install-v1 返回 404。验证：`curl -H "Accept: application/vnd.npm.install-v1+json" https://registry.npmjs.org/<包名>`
+  返回 200 后再安装；不要误判为 restricted 包或删包重发。
+- **scoped 包名防占用**：无 scope 名字可能被他人注册（npm 无申诉通道），直接改用 `@<账号>/<包名>`（见 §3 通道 A 的 scoped 说明）。
 - **版本对齐**：npm 上 `@deepseek-ai/*` 最新是 `next=0.1.0-rc.6`，本地源码 checkout 是 rc.5；
   插件 dependencies 用 `^0.1.0-rc.6` 即可从 npm 解析，不与源码运行冲突（Cordis 品牌互操作）。
   若装进本机 profile 遇版本冲突，用 `dsh plugin add ./<路径>` 并手工对齐 profile 的 `pnpm-workspace.yaml`。
