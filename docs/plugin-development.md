@@ -2,7 +2,7 @@
 
 > 本文由 [dsh-plugin-dev-guide](https://github.com/anweat/dsh-plugin-dev-guide) 维护，内容基于 deepseek-harness 官方文档整理。
 
-> 源码仓库：`D:\codeproject\deepseek-harness`（下称"仓库"）。本文所有相对路径均相对仓库根。
+> 源码仓库：deepseek-harness（github.com/deepseek-ai/deepseek-harness，下称"仓库"）。本文所有相对路径均相对仓库根。
 > 参考文档：`docs/cordis-primer.md`、`docs/user/develop/**`、`docs/cordis-tutorial/**`、`docs/cookbook/adding-a-tool.md`。
 
 ---
