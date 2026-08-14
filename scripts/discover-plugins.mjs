@@ -93,7 +93,8 @@ function fetchRemoteHead(repo) {
 
 /** npm 已发布版本（未发布返回 null）。 */
 function fetchNpmVersion(name) {
-  const r = sh('npm', ['view', name, 'version'], { timeout: 30000 })
+  // npm is a .cmd shim on Windows: spawn through a shell so cmd.exe resolves it.
+  const r = sh('npm', ['view', name, 'version'], { timeout: 30000, shell: true })
   if (!r.ok) return null
   return r.out.split('\n')[0]?.trim() ?? null
 }
