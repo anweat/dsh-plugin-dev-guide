@@ -17,7 +17,7 @@
  *   node scripts/discover-plugins.mjs --sync --auto-tag   # 同步 + 对未发布版本打 tag 推送（触发 CI 发布）
  *   node scripts/discover-plugins.mjs --tag-version 0.1.0 # 与 --auto-tag 同用：用指定版本代替 package.json version
  *
- * 前置：gh CLI 已登录（gh auth status），npm 可访问 registry，DSH_PLUGIN_OWNER 已设置。
+ * 前置：gh CLI 已登录（gh auth status），npm 可访问 registry。
  * 安全：默认纯只读；--sync 只写本地；--auto-tag 才会推送 tag（触发各仓库发布流水线）。
  */
 
@@ -30,13 +30,6 @@ import { homedir } from 'node:os'
 const OWNER = process.env.DSH_PLUGIN_OWNER ?? ''
 const CHECKOUT_ROOT = process.env.DSH_CHECKOUT_ROOT ?? join(homedir(), 'dsh-plugin-checkouts')
 const INVENTORY_FILE = join(process.cwd(), 'plugins-inventory.json')
-
-if (!OWNER) {
-  console.error('[discover] DSH_PLUGIN_OWNER is required: set it to your GitHub username, e.g.')
-  console.error('  $env:DSH_PLUGIN_OWNER="your-github-username"  (PowerShell)')
-  console.error('  DSH_PLUGIN_OWNER=your-github-username node scripts/discover-plugins.mjs')
-  process.exit(2)
-}
 
 const args = process.argv.slice(2)
 const SYNC = args.includes('--sync')
