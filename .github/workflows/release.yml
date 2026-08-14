@@ -1,0 +1,26 @@
+# Release: v* tag push creates a GitHub Release with the full guide as a zip asset.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Package guide
+        run: |
+          zip -r dsh-plugin-dev-guide-${{ github.ref_name }}.zip README.md LICENSE docs examples scripts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dsh-plugin-dev-guide-*.zip
+          generate_release_notes: true
