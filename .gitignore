@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# build output
+lib/
+dist/
+
+# archives
+*.tgz
+*.tar.gz
+
+# local test scratch
+.dsh-test/
+plugins-inventory.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
