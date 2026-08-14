@@ -85,7 +85,7 @@ pnpm dsh plugin --profile dsh-plugin-test add <插件目录>/dsh-web-search-pro-
 pnpm dsh --profile dsh-plugin-test --dump-config | findstr web-search-pro   # ④ 确认补丁层生效
 ```
 
-验证完成后删除临时 profile（`Remove-Item -Recurse $env:USERPROFILE\.dsh\profiles\dsh-plugin-test`）。
+验证完成后删除临时 profile（`Remove-Item -Recurse <DSH_HOME>/profiles/dsh-plugin-test`）。
 
 ## 3. 通道 A：发布到 npm（推荐）
 
@@ -159,7 +159,9 @@ node scripts/discover-plugins.mjs --sync --auto-tag      # ③ + 对未发布版
 - **状态清单**：写入 \`plugins-inventory.json\`；表格输出含每个仓库的发布就绪度（缺 prepare / 缺 CI 会告警）。
 - **安全**：默认只读；\`--sync\` 只写本地；只有显式 \`--auto-tag\` 才会推送 tag。
   自动发送的前提是各仓库已配好 \`NPM_TOKEN\`（见 §3.5），否则 CI 的 publish job 会失败。
-- **环境变量**：\`DSH_PLUGIN_OWNER\`（必填，你的 GitHub 用户名）、\`DSH_CHECKOUT_ROOT\`（可选，默认 `~/dsh-plugin-checkouts`） 4. 通道 B：GitHub 仓库分发
+- **环境变量**：\`DSH_PLUGIN_OWNER\`（必填，你的 GitHub 用户名）、\`DSH_CHECKOUT_ROOT\`（可选，默认 ~/dsh-plugin-checkouts）。
+
+## 4. 通道 B：GitHub 仓库分发
 
 仓库结构即 bundle 包本身（源码 + `package.json` + `cordis.patch.yml`）。
 
@@ -215,7 +217,7 @@ pnpm dsh plugin --profile dsh-plugin-test add -w <插件目录>/dsh-web-search-p
 # ② 补丁层自动加入 bundles（reconcile）：dsh.profile.bundles = [base, dsh-web-search-pro]
 pnpm dsh --profile dsh-plugin-test --dump-config   # 显示 # == dsh-web-search-pro 层，行 - id: web-search-pro
 # ③ 用完删除临时 profile
-Remove-Item -Recurse -Force $env:USERPROFILE\.dsh\profiles\dsh-plugin-test
+Remove-Item -Recurse -Force <DSH_HOME>/profiles/dsh-plugin-test
 ```
 
 **⚠ 实测（pnpm 9.15.9）下 `dsh plugin add` 必须带 `-w`**：dsh 初始化 profile 会生成
@@ -241,3 +243,4 @@ Remove-Item -Recurse -Force $env:USERPROFILE\.dsh\profiles\dsh-plugin-test
 - **补丁层顺序**：用户 profile 的 `cordis.patch.yml` 在 bundle 层之后，可覆盖你的行（`config` 整块替换）。
 - **凭据类配置**：settings/credentials 命名空间的暴露是 harness 的 allowlist 决定的，
   社区插件不能随包分发 UI 配置卡片（`packages/host/apiproxy` 白名单）；用 `settings.yaml` / cordis config / env 代替。
+
