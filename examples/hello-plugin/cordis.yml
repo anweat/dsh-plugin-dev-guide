@@ -1,0 +1,5 @@
+# hello-plugin 挂载补丁（开发期 --patch 使用）
+# 注意：name 必须写插件源码的【绝对路径】；打包分发后改为包名（name: dsh-hello-plugin）。
+- insert:
+    - id: hello
+      name: '/abs/path/to/your-plugin/src/my-plugin.ts'
