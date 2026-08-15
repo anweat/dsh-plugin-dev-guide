@@ -11,6 +11,7 @@
 | [dsh-voice-webspeech](https://github.com/anweat/dsh-voice-webspeech) | 0.1.0 | Host+Client | 浏览器 Web Speech API 语音输入：零服务端、零密钥、零模型下载（Edge=Azure 语音、Chrome=Google 语音） | `dsh plugin --profile web add dsh-voice-webspeech` |
 | [dsh-browser](https://github.com/anweat/dsh-browser) | 0.1.3 | Host | 自包含浏览器运行时：插件本地打包 Playwright(chromium)+OpenCLI（全局复用回退），提供 `browser` 服务 + 9 个交互式浏览器工具 | `dsh plugin --profile web add @anweat/dsh-browser` |
 | [dsh-restart](https://github.com/anweat/dsh-restart) | 0.1.0 | Host+Client | 重启 DSH：可配置重启方式（Node 原生/旧 PowerShell 适配）、重启后自动继续提示词、可选看门狗自动拉起 | `dsh plugin --profile web add dsh-restart` |
+| [dsh-assistant-message-forge](https://github.com/anweat/dsh-assistant-message-forge) | 0.1.0 | Host+Client | 消息锻造台：创建/修改/注入测试用 assistant 消息，导入识别 session.jsonl(.zstd) 会话日志 | `dsh plugin --profile web add dsh-assistant-message-forge` |
 
 ## 设计要点
 
