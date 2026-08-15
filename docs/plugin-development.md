@@ -445,6 +445,10 @@ git 安装拉的是**源码**：需要作者的 `prepare` 脚本自包含构建�
 
 ## 10. Web GUI（Client）插件
 
+> 本节是速览。完整的 Client 插件开发指南（`dsh.client` 包契约、Slot 槽位目录与选型、
+> 设置卡片、主题、外部包构建模板、HMR 与实测踩坑）见
+> [插件前端开发指南](./插件前端开发指南.md)。
+
 浏览器侧是独立的 client 插件生态（`packages/client/**`），与 Host 插件共用同一套 Cordis 上下文模型，但跑在浏览器里。
 
 ### 10.1 声明（`dsh.client`）
