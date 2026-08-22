@@ -10,7 +10,7 @@
 | **GitHub 仓库** | `dsh plugin --profile <name> add github:<user>/<repo>` | 仓库 + `prepare` 脚本 + README | pnpm≥10 首次要 `allowBuilds` 白名单 |
 | **tarball / 本地路径** | `dsh plugin add ./<包>-<ver>.tgz`（或 `./<目录>`） | `pnpm pack` 产物 | 无需任何账号/权限，适合内部分发与验证 |
 
-**背景**：DSH 官方全家桶已公开到 npm（`@deepseek-ai/dsh-*`，dist-tags：`latest=0.0.1-rc.1` 旧序列、`next=0.1.0-rc.6` 当前开发线），社区插件因此可以从 npm 直接安装。
+**当前验证基线**：deepseek-harness `dsh-v0.1.1-rc.2`、`pnpm@11.7.0`。DSH 仍处于破坏性演进阶段；社区插件以当前基线适配，不承诺旧版兼容。
 
 ---
 
@@ -219,18 +219,16 @@ GitHub topic `dsh-plugin` 上的现有插件（详见 `web-search-pro/RESEARCH.m
 ```sh
 cd <deepseek-harness 仓库根>
 # ① 初始化临时 profile（自动含 @deepseek-ai/dsh-base）
-pnpm dsh plugin --profile dsh-plugin-test add -w <插件目录>/dsh-web-search-pro-0.1.0.tgz
+corepack pnpm dsh plugin --profile dsh-plugin-test add <插件目录>/dsh-web-search-pro-0.1.0.tgz
 # ② 补丁层自动加入 bundles（reconcile）：dsh.profile.bundles = [base, dsh-web-search-pro]
-pnpm dsh --profile dsh-plugin-test --dump-config   # 显示 # == dsh-web-search-pro 层，行 - id: web-search-pro
+corepack pnpm dsh --profile dsh-plugin-test --dump-config   # 显示 # == dsh-web-search-pro 层，行 - id: web-search-pro
 # ③ 用完删除临时 profile
 Remove-Item -Recurse -Force <DSH_HOME>/profiles/dsh-plugin-test
 ```
 
-**⚠ 实测（pnpm 9.15.9）下 `dsh plugin add` 必须带 `-w`**：dsh 初始化 profile 会生成
-`pnpm-workspace.yaml`（`packages: [.]`），profile 因此是 workspace root；pnpm 9/11 在 root 内
-`add` 直接报 `ERR_PNPM_ADDING_TO_ROOT` 拒绝执行，`-w`（pnpm 参数透传，dsh 不拦截）显式确认后成功。
-这是 dsh 0.1.0-rc.5 与 pnpm 9/11 的兼容行为，遇到报错先试 `-w`，或在该 profile 的
-`pnpm-workspace.yaml` 加 `ignore-workspace-root-check: true`。
+`dsh-v0.1.1-rc.2` 适配分支会固定 profile 的 `packageManager: pnpm@11.7.0`，并在
+`plugin add/remove/update` 内部自动给 pnpm 补 `-w`；调用方不再手工传递。profile 同时设置
+`strictDepBuilds: false`，未明确允许的依赖构建脚本会被忽略，而不会使整个安装失败。
 
 ## 7. 常见坑速查
 
@@ -239,18 +237,15 @@ Remove-Item -Recurse -Force <DSH_HOME>/profiles/dsh-plugin-test
   普通 publish token 在 CI 里必 403（实测：tarball 与 provenance 均成功后才在此步被拒）。
 - **CI 中 `npm publish dist/*.tgz` 报 git ls-remote 错误**：glob 展开后 `dist/x.tgz` 不带 `./` 前缀会被 npm 11
   当成 GitHub shorthand（`user/repo` 模式）去 ssh 拉取；必须写 `npm publish ./dist/*.tgz`。
-- **`dsh plugin add` 报 `ERR_PNPM_ADDING_TO_ROOT`**：profile 是 workspace root，命令加 `-w`（见 §6.5）。
+- **`dsh plugin add` 报 `ERR_PNPM_ADDING_TO_ROOT`**：当前 Harness 应自动补 `-w`；先确认运行的是 `dsh-v0.1.1-rc.2` 适配分支及 `pnpm@11.7.0`，不要把手工 `-w` 固化到用户命令。
 - **发布成功但 pnpm 装不到（"not in the npm registry"）**：npm registry 的 abbreviated metadata（`Accept: application/vnd.npm.install-v1+json`，pnpm 等安装器用的就是它）
   在 publish 后约 1–2 分钟才生成，期间 `npm view` / 完整 metadata 正常、install-v1 返回 404。验证：`curl -H "Accept: application/vnd.npm.install-v1+json" https://registry.npmjs.org/<包名>`
   返回 200 后再安装；不要误判为 restricted 包或删包重发。
 - **scoped 包名防占用**：无 scope 名字可能被他人注册（npm 无申诉通道），直接改用 `@<账号>/<包名>`（见 §3 通道 A 的 scoped 说明）。
-- **版本对齐**：npm 上 `@deepseek-ai/*` 最新是 `next=0.1.0-rc.6`，本地源码 checkout 是 rc.5；
-  插件 dependencies 用 `^0.1.0-rc.6` 即可从 npm 解析，不与源码运行冲突（Cordis 品牌互操作）。
-  若装进本机 profile 遇版本冲突，用 `dsh plugin add ./<路径>` 并手工对齐 profile 的 `pnpm-workspace.yaml`。
+- **版本对齐**：当前工作区以 `dsh-v0.1.1-rc.2` 为唯一基线。Host 提供的 `@deepseek-ai/*`、Cordis、Schemastery 依赖应声明为精确版本范围的 optional peer，并在 devDependencies 镜像用于构建；不要把它们装成插件私有运行时副本。
 - **`npm view <pkg> version` 显示旧版本**：dist-tags 的 `latest` 是历史遗留 `0.0.1-rc.1`，
   当前开发线看 `next`：`npm view @deepseek-ai/dsh-tools dist-tags`。
 - **git 安装无 `prepare` 必失败**：TS 源码不会自动编译；要么给 `prepare`，要么发构建产物（npm/tgz）。
 - **补丁层顺序**：用户 profile 的 `cordis.patch.yml` 在 bundle 层之后，可覆盖你的行（`config` 整块替换）。
-- **凭据类配置**：settings/credentials 命名空间的暴露是 harness 的 allowlist 决定的，
-  社区插件不能随包分发 UI 配置卡片（`packages/host/apiproxy` 白名单）；用 `settings.yaml` / cordis config / env 代替。
+- **设置配置**：插件 Host 半用 `installSettingsSection` 声明自己的 namespace，Client 半可通过 `settingsScope.bind` 注册 `settings.plugin.item` keyed 卡片；凭据仍应使用专门的 credentials/环境变量边界，不要混入普通 settings。
 

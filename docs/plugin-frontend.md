@@ -4,8 +4,8 @@
 > [插件开发详解](./插件开发详解.md)（通用 Cordis/Host 插件）和
 > [发布到社区指南](./发布到社区指南.md)（分发链路）配套阅读。
 >
-> **版本基线**：`deepseek-harness` 源码仓库 `0.1.0-rc.5`，
-> commit `47f943859b`。该版本仍是 developer preview，README 明确声明后续可能有兼容性破坏；
+> **版本基线**：`deepseek-harness` 标签 `dsh-v0.1.1-rc.2`，
+> commit `b150a551`。该版本仍是 developer preview，本工作区按当前版本直接适配，不保留旧版兼容层；
 > 所有“服务有哪些方法、槽位有哪些字段”类问题，最终以源码 TypeScript 接口为准。
 
 ## 0. 一分钟结论
@@ -157,7 +157,7 @@ export function apply(ctx: Context): void {
 | tsconfig | 继承 `tsconfig.base.client.json` | 自带 `tsconfig.json`（§9） |
 | 加载 | `pnpm dsh web --patch <cordis.yml>`（源码直接跑） | `pnpm dsh plugin --profile web add <pkg/./github:...>`，重启 `dsh web` |
 | HMR | `pnpm run dev:web` 官方 watcher | 官方 watcher 不扫描仓库外包；稳定回路是 rebuild + 刷新/重启（§10） |
-| 类型获取 | 源码相对路径直连 | 通过 `optional peerDependencies` 安装 `@deepseek-ai/dsh-client-*`，开发时可用 `dev:link-dsh` 软链到源码仓库 |
+| 类型获取 | 源码相对路径直连 | Host 共享包放入 `peerDependencies`（`optional: true`）并镜像到 `devDependencies`；profile 设置 `autoInstallPeers: false`，开发时可用 `dev:link-dsh` 软链源码仓库 |
 | 分发 | 随仓库发布 | npm / GitHub / tarball（见发布指南） |
 
 ### 3.1 仓库内开发的完整回路
@@ -326,8 +326,8 @@ PropsRuntime（owner props + session/global 标准 kit + 框架 hooks）
 
 ```ts
 ctx.slots.inject('settings.plugin.item', function* () {
-  yield ctx.slots.register({ name: 'settings.plugin.item', id: 'card-a', order: 10 }, CardA)
-  yield ctx.slots.register({ name: 'settings.plugin.item', id: 'card-b', order: 20 }, CardB)
+  yield ctx.slots.register({ name: 'settings.plugin.item', key: 'card-a' }, CardA)
+  yield ctx.slots.register({ name: 'settings.plugin.item', key: 'card-b' }, CardB)
 })
 ```
 
@@ -352,7 +352,7 @@ ctx.slots.inject('settings.plugin.item', function* () {
 |---|---|---|
 | `settings.section` | list / root | 一个完整设置页（owner 给 `close`；用 `id/order/label` 表达导航） |
 | `settings.plugins.tab` | list / root | “插件”设置页里的一个 tab |
-| `settings.plugin.item` | list / root | **插件自己的配置卡片**（§6.2/6.3），设置 → 插件 → 可配置 |
+| `settings.plugin.item` | keyed / root | **插件自己的配置卡片**（§6.2/6.3），以唯一 `key` 注册；设置 → 插件 → 可配置 |
 | `settings.general.item` | list / root | 常规设置页里的单行偏好 |
 | `settings.action` | list / root | 设置面板标题栏动作 |
 | `settings.onboarding` | list / root | 引导步骤（较特殊，先别碰） |
@@ -445,8 +445,7 @@ ctx.slots.inject('conversation.input.left', () => ctx.slots.register({
 ```ts
 ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
   name: 'settings.plugin.item',
-  id: 'my-plugin',
-  order: 30,
+  key: 'my-plugin',
   locale: NS,
   inject: () => ({}),        // 不需要 Host 写路径，注入面留空
 }, SettingsCard))
@@ -538,8 +537,7 @@ export function apply(ctx: Context): void {
 
   ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
     name: 'settings.plugin.item',
-    id: 'dsh-restart',
-    order: 40,
+    key: 'dsh-restart',
     locale: NS,
     inject: () => ({
       hooks: { dshRestart: store },                       // 渲染器绑定成 useDshRestart hook

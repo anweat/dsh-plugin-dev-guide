@@ -15,13 +15,14 @@
 | **示例插件** | [examples/hello-plugin](./examples/hello-plugin/) | 最小可用插件骨架（加载日志 + greet 工具），可直接复制改造成新插件 |
 | **发布巡检脚本** | [scripts/discover-plugins.mjs](./scripts/discover-plugins.mjs) | 自动搜索账号下 dsh 相关仓库 → 对比 npm 发布状态 → 同步 checkout → 打 tag 触发 CI 发布 |
 | **插件索引（作者）** | [plugins.md](./plugins.md) | anweat 的 DSH 插件集合：安装命令 / 版本 / 说明 / 新增流程 |
+| **维护运行手册** | [docs/maintenance.md](./docs/maintenance.md) | DSH 破坏性升级后的插件巡检、适配、验证与 Issue/PR 决策门禁 |
 
 ## 快速开始
 
 ### 1. 准备
 
-- Node.js ^22.19 || >=24，pnpm（仓库 pin pnpm@11.7.0）
-- deepseek-harness 源码仓库克隆（pnpm install && pnpm run build 后可用 pnpm dsh 源码运行）
+- Node.js ^22.19 || >=24，Corepack + pnpm（当前基线 pin `pnpm@11.7.0`）
+- deepseek-harness `dsh-v0.1.1-rc.2` 源码仓库克隆（`corepack pnpm install && corepack pnpm run build` 后可用 `corepack pnpm dsh` 源码运行）
 
 ### 2. 第一个插件（3 步）
 
