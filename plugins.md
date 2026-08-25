@@ -15,13 +15,13 @@
 
 ## 设计要点
 
-- **发布流水线全自动**：推 `v*` tag → CI 构建/校验 → npm publish（sigstore provenance）→ GitHub Release（详见 [publishing.md](./publishing.md) §3.5）
+- **发布流水线全自动**：推 `v*` tag → CI 构建/校验 → npm publish（sigstore provenance）→ GitHub Release（详见 [publishing.md](./docs/publishing.md) §3.5）
 - **名字占用**：无 scope 包名可能被他人注册，改用 `@<账号>/<包名>`（scoped 永不冲突）
 - **依赖关系**：dsh-web-search-pro 的浏览器类能力依赖 dsh-browser 提供 `browser` 服务（Cordis `inject` 自动排序）；两个插件都必须作为 profile 的直接依赖安装，避免 pnpm 清理未被直接声明的 bundle
 
 ## 新增插件流程
 
-1. 按 [plugin-development.md](./plugin-development.md) 开发（bundle 规范 + `prepare` + `repository` 字段）
+1. 按 [plugin-development.md](./docs/plugin-development.md) 开发（bundle 规范 + `prepare` + `repository` 字段）
 2. 复制 `.github/workflows/publish.yml`（[模板](https://github.com/anweat/dsh-web-search-pro/blob/master/.github/workflows/publish.yml)）
 3. 仓库打 `dsh-plugin` topic（官方收录机制）
 4. 推 `v*` tag 自动发布，然后在本页补一行

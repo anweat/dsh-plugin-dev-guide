@@ -4,6 +4,10 @@
 
 > 源码仓库：deepseek-harness（github.com/deepseek-ai/deepseek-harness，下称"仓库"）。本文所有相对路径均相对仓库根。
 > 参考文档：`docs/cordis-primer.md`、`docs/user/develop/**`、`docs/cordis-tutorial/**`、`docs/cookbook/adding-a-tool.md`。
+>
+> 本文讲的是**该怎么写**。运行时**实际怎么表现** —— 激活顺序、撞名、注册身份从哪来、
+> 哪些事静态判定不了 —— 见 [原生行为注意事项](./native-behaviour.md),那里每条都实测过,
+> 其中好几条与直觉相反。
 
 ---
 
@@ -447,7 +451,7 @@ git 安装拉的是**源码**：需要作者的 `prepare` 脚本自包含构建�
 
 > 本节是速览。完整的 Client 插件开发指南（`dsh.client` 包契约、Slot 槽位目录与选型、
 > 设置卡片、主题、外部包构建模板、HMR 与实测踩坑）见
-> [插件前端开发指南](./插件前端开发指南.md)。
+> [插件前端开发指南](./plugin-frontend.md)。
 
 浏览器侧是独立的 client 插件生态（`packages/client/**`），与 Host 插件共用同一套 Cordis 上下文模型，但跑在浏览器里。
 

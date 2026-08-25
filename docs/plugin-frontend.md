@@ -1,12 +1,16 @@
 # DSH 插件前端开发指南（Web GUI / Client 插件）
 
 > 本指南是 DSH 插件开发工作区的“插件前端”专题部分，与
-> [插件开发详解](./插件开发详解.md)（通用 Cordis/Host 插件）和
-> [发布到社区指南](./发布到社区指南.md)（分发链路）配套阅读。
+> [插件开发详解](./plugin-development.md)（通用 Cordis/Host 插件）和
+> [发布到社区指南](./publishing.md)（分发链路）配套阅读。
 >
 > **版本基线**：`deepseek-harness` 标签 `dsh-v0.1.1-rc.2`，
 > commit `b150a551`。该版本仍是 developer preview，本工作区按当前版本直接适配，不保留旧版兼容层；
 > 所有“服务有哪些方法、槽位有哪些字段”类问题，最终以源码 TypeScript 接口为准。
+>
+> 前端平面有三条硬限制会直接影响设计：`BootPluginRow` 没有 config 位也没有 priority、
+> 平台种子词是固定的一小组、设计令牌环境继承但没有导出面。见
+> [原生行为注意事项 §6](./native-behaviour.md#6-前端平面的三条硬限制)。
 
 ## 0. 一分钟结论
 
@@ -939,7 +943,7 @@ pnpm dsh web --patch /abs/path/to/plugins/<插件名>/cordis.yml
 - **git 安装免 build 的前提是仓库提交了 `lib/`**；
 - CI 自动发布要求 `repository` 字段（provenance 校验）；
 - 完整流程、三条通道（npm / GitHub / tarball）、`discover-plugins.mjs` 一键矩阵见
-  [发布到社区指南](./发布到社区指南.md)。
+  [发布到社区指南](./publishing.md)。
 
 ## 13. 本工作区参考矩阵
 
@@ -952,13 +956,11 @@ pnpm dsh web --patch /abs/path/to/plugins/<插件名>/cordis.yml
 | 官方参考 | `packages/client/**`（deepseek-harness） | 全部 | 槽位目录、四个 share 类型、`ui-settings-plugins` 卡片、`ui-skill` keyed toolview |
 | 架构审计 | `deepseek-harness\本地架构审计文档（不入库）` | — | 换布局/换 Shell 的边界与 P0–P4 路线图 |
 
-本工作区文档：
+本指南内其它篇目：
 
-- 工作区实现总结：[voice-webspeech/IMPLEMENTATION.md](../voice-webspeech/IMPLEMENTATION.md)、
-  [browser/IMPLEMENTATION.md](../browser/IMPLEMENTATION.md)、
-  [web-search-pro/IMPLEMENTATION.md](../web-search-pro/IMPLEMENTATION.md)；
-- 通用开发：[插件开发详解](./插件开发详解.md)（§10 是本文的精简版入口）；
-- 分发：[发布到社区指南](./发布到社区指南.md)。
+- 通用开发：[插件开发详解](./plugin-development.md)（§10 是本文的精简版入口）；
+- 分发：[发布到社区指南](./publishing.md)；
+- 实测行为：[原生行为注意事项](./native-behaviour.md)（§6 是前端平面的三条硬限制）。
 
 ## 14. 反模式与检查清单
 

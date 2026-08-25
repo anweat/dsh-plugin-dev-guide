@@ -12,6 +12,7 @@
 | **插件开发详解** | [docs/plugin-development.md](./docs/plugin-development.md) | 实现形式 / 生命周期 / 事件 / 工具 / 服务 / cordis.yml / 打包 / Web UI 插件 / 远程调用 / 工作流 / 参考索引 |
 | **发布到社区指南** | [docs/publishing.md](./docs/publishing.md) | npm / GitHub / tarball 三通道，打包非必须的复用形态，GitHub Actions 全自动发布，自动发现/同步/发送体系 |
 | **插件前端开发指南** | [docs/plugin-frontend.md](./docs/plugin-frontend.md) | Web GUI / Client 插件：`dsh.client` 包契约、Slot 槽位目录与选型、主题、设置卡片、外部包构建协议、HMR、Host↔Client 通信 |
+| **原生行为注意事项** | [docs/native-behaviour.md](./docs/native-behaviour.md) | 实测确认的运行时行为:注册身份、撞名、激活顺序、前端平面的硬限制、热更新边界、scope、以及静态判定不了的部分 |
 | **示例插件** | [examples/hello-plugin](./examples/hello-plugin/) | 最小可用插件骨架（加载日志 + greet 工具），可直接复制改造成新插件 |
 | **发布巡检脚本** | [scripts/discover-plugins.mjs](./scripts/discover-plugins.mjs) | 自动搜索账号下 dsh 相关仓库 → 对比 npm 发布状态 → 同步 checkout → 打 tag 触发 CI 发布 |
 | **插件索引（作者）** | [plugins.md](./plugins.md) | anweat 的 DSH 插件集合：安装命令 / 版本 / 说明 / 新增流程 |
@@ -75,6 +76,8 @@ pnpm dsh web --patch /abs/path/to/your-plugin/cordis.yml
 - **配置**：Config 接口 + 同名 Schemastery schema，cordis.yml 传入并校验、填默认值；!!js 表达式可读运行时服务。
 - **工具**：defineTool({name, description, parameters, output, execute})，args 自动校验、结果规范化、UI 卡片纯函数投影。
 - **发布分层**：bundle patch → profile patch → 全局 patch → --patch 覆盖；后层按行覆盖，config 整块替换。
+- **激活顺序按服务可用性，不按行序**：`inject` 的服务一就位插件就激活，所以在 `apply()` 里读注册表多半是空的；要全局视图得等 boot 之后。详见[原生行为注意事项](./docs/native-behaviour.md)。
+- **后端没有"相加"的接缝**：路由、RPC 通道、工具名、`single`/`keyed` 槽撞名一律抛错（只有 `list`/`chain` 槽相加）；把包名放进路径里，跨包撞车就成了不可能。
 
 ## 官方参考（deepseek-harness 仓库内）
 
