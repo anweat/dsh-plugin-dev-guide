@@ -127,10 +127,54 @@ static  73 个,只有 1 个翻转           ← 固定调色板
 - **`StoredEntry` 的 `id` 嵌在 `options` 下**,不是顶层:读 `entry.options.id`,不是 `entry.id`。
 - **RPC 通道文法是 `^\/[A-Za-z0-9._~-]+$`——只有一段,不许内层斜杠。** `/a/b` 直接被拒。`/api` 是保留通道,只能 `intercept`,不能 `handle`。
 - **`Object.assign(fn, { name })` 设不上**——函数的 `name` 只读。要给插件命名,用具名函数声明。
-- **一个包的工具名可以是加载期 config**(如 `tool-subagent` 的 `toolName`),所以同一个包在一个组合里可能以多个名字出现。按包名推断工具名会漏。
-- **bundle 行会展开成行列表里根本没有的包。** `@deepseek-ai/dsh-agent-spine-demo` 在自己 `apply` 里挂 `tool-bash`/`tool-jobs`/`tool-skill`,这些名字在组合出的配置里看不到。它把子包声明为 `peerDependencies`(项目约定),那是唯一的静态线索。
 
-## 10. 有些事静态判定不了
+## 10. 组合里约三分之一的包从不作为"行"出现 ⚠
+
+读 `cordis.yml`(或组合后的 entry list)去推"这个部署装了什么",会漏掉一大块。组合有**三层嵌套,只有两层是看得见的**:
+
+| 层 | 形态 | 在 entry list 里可见? |
+|---|---|---|
+| 补丁层 bundle | `packages/bundle/*/cordis.patch.yml` | ✅ 应用后就是普通的行 |
+| 分组 | `cordis:group` + 数组 config | ✅ 嵌套的行,递归展开即可 |
+| **一个插件挂子插件** | 它在自己 `apply` 里 `ctx.plugin(X)` | ❌ **完全不可见** |
+
+第三层是问题所在。`@deepseek-ai/dsh-agent-spine-demo` 是一行,但它在 `apply` 里挂了 `tool-bash`、`tool-jobs`、`tool-skill` 等等——**这些包名在组合出的配置里一次都不出现**。
+
+实测两个出厂 profile:
+
+```
+web        135 行 -> 展开后 171 个包    其中 37 个从不作为行出现
+headless    81 行 -> 展开后 119 个包    其中 39 个从不作为行出现
+```
+
+后果很具体:按行列表推导"哪些工具名已被占用",headless 上只能得到 15 个里的 12 个,漏掉 `bash`、`skill`、`job_list` 等等——而这些恰恰是最容易被第三方插件重名的。
+
+### 唯一的静态线索是 `peerDependencies`
+
+harness 的包把自己要挂的子包声明为 `peerDependencies`(`dependencies` 按约定几乎是空的)。按 peer 做闭包展开,漏报从 6 个降到 0:
+
+```
+仅行列表       12 / 15
+peer 闭包      15 / 15
+peer + dev     15 / 15   ← 一个工具都不多,所以用更窄的 peer
+```
+
+### 展开必然会多报,而这是对的方向
+
+peer 闭包会带进"依赖了但没挂"的包,以及**条件注册**的工具(`read_image`、`list_agents`、`report` 在出厂 profile 里确实没注册)。headless 上多报 14 个。
+
+不要试图消掉多报。**两种错误的代价不对称**:
+
+- 名字误判为"被占" → 某个插件白挨一次改名或降级
+- 名字误判为"空着" → **整个组合起不来**
+
+所以往多报那边偏,并且在数据里标明这是**上界**而不是精确集合(我们用 `mayRegisterMore: true`)。
+
+### 另外:一个包可以以多个名字出现
+
+工具名可以是加载期 config——`tool-subagent` 的 `toolName` 就是。出厂组合把它按不同 subagent 后端加载了两次,所以模型看到的是 `subagent` **和** `subagent_fork`。按"一个包一组固定工具名"建模会漏掉别名。
+
+## 11. 有些事静态判定不了
 
 写工具的人容易高估静态分析能拿到多少:
 
