@@ -190,15 +190,35 @@ window.__ModuleLoader__.load({ id: '<包名>', factory: (require) => {
 
 少了这层包装,构建通过、类型全过、bundle 也被下载了,启动时报 `loaded without registering "<pkg>" via __ModuleLoader__.load`。外置的平台模块正是通过注入的那个 `require` 解析的,不走全局也不走 import map。
 
-**设置卡的基础设施是内部的。** `settings.plugin.item` 是 keyed 槽,任何插件都能占一个 key;但 `ui-settings-plugins` 渲染自家三张卡用的 `PluginCard` / `ValueField` / `CardForm` **不在它的 exports 里**。第三方卡只能从 `ui-primitives` 和环境令牌搭。
+**注册一张设置卡要三样东西齐全,少一样就静默不显示。**
 
-**`@deepseek-ai/dsh-client-runtime` 目前无法从 npm 安装。** 它发布的清单依赖 `@deepseek-ai/dsh-compact`,而 registry 里没有这个包(看起来是改名成了 `dsh-compaction`,发布物里的引用没跟上)。
+```js
+export const inject = ['slots', 'locale', 'settingsScope']   // ← locale 必需
 
+ctx.effect(() => ctx.locale.register(NS, { zh, en }), '…')   // ← 先注册词典
+ctx.slots.inject('settings.plugin.item', () => ctx.slots.register({
+  name: 'settings.plugin.item',
+  key: NS,
+  locale: NS,                                                 // ← 卡片靠它取文案
+  inject: () => face,
+}, Card))
 ```
-npm error 404 '@deepseek-ai/dsh-compact@^0.0.1-rc.1' could not be found
+
+`dsh.client.inject` 里还要列上 **`@deepseek-ai/dsh-client-ui-settings-plugins`** —— 声明这个槽的那个包。少了它,`slots.inject` 等的槽可能还没出现。
+
+漏掉 `locale` 或漏掉那条 client inject 时,bundle 正常加载、控制台没有任何报错、插件也在启动图里,**卡片就是不出现**。
+
+**卡片的表单基础设施是内部的。** `ui-settings-plugins` 渲染自家三张卡用的 `PluginCard` / `ValueField` / `CardForm` 不在它的 exports 里,第三方卡从 `ui-primitives` 和环境令牌搭。
+
+**这些包的 `latest` dist-tag 不可靠,要按 DSH 版本对齐着装。** `npm view @deepseek-ai/dsh-client-runtime version` 给的是 `0.0.1-rc.1`,一个陈旧发布;它依赖 `@deepseek-ai/dsh-compact`,而那个包已改名 `dsh-compaction`,registry 里没有,于是安装直接 404。
+
+实际与 DSH 对齐的版本是 `0.1.1-rc.2`(和 `@deepseek-ai/dsh` 同号),只有 2 个依赖,干净。
+
+```bash
+npm view @deepseek-ai/dsh-client-runtime versions   # 看列表,不要只看 latest
 ```
 
-`--legacy-peer-deps`、`--omit=peer` 都绕不过,因为它是普通依赖不是 peer。**在仓库外构建 client 插件今天要么链到一份 checkout,要么不依赖这个包** —— 它导出的 `createSnapshotStore` 只是个 20 行的 store,类型也可以本地声明。
+按 `latest` 装会得到一个装不上的旧版本,而报错指向一个不存在的包名 —— 很容易被误判成"官方发布坏了"。
 
 ## 12. profile 的 node_modules 里没有 loader
 
