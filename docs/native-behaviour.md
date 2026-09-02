@@ -174,7 +174,44 @@ peer 闭包会带进"依赖了但没挂"的包,以及**条件注册**的工具(`
 
 工具名可以是加载期 config——`tool-subagent` 的 `toolName` 就是。出厂组合把它按不同 subagent 后端加载了两次,所以模型看到的是 `subagent` **和** `subagent_fork`。按"一个包一组固定工具名"建模会漏掉别名。
 
-## 11. 有些事静态判定不了
+## 11. 前端插件的三处实测坑
+
+写完一个真的 client 插件、装进 web profile 跑起来之后拿到的,每一条都只有真跑才会暴露。
+
+**bundle 必须自己向模块表注册。** 本指南 §9.3 的模板里有这段,而它容易被当成样板略过 —— 略过之后构建、类型检查、bundle 下载全都正常,只有启动会失败。产物要包成:
+
+```js
+window.__ModuleLoader__.load({ id: '<包名>', factory: (require) => {
+  var module = { exports: {} }; var exports = module.exports;
+  /* … */
+  return module.exports;
+} })
+```
+
+少了这层包装,构建通过、类型全过、bundle 也被下载了,启动时报 `loaded without registering "<pkg>" via __ModuleLoader__.load`。外置的平台模块正是通过注入的那个 `require` 解析的,不走全局也不走 import map。
+
+**设置卡的基础设施是内部的。** `settings.plugin.item` 是 keyed 槽,任何插件都能占一个 key;但 `ui-settings-plugins` 渲染自家三张卡用的 `PluginCard` / `ValueField` / `CardForm` **不在它的 exports 里**。第三方卡只能从 `ui-primitives` 和环境令牌搭。
+
+**`@deepseek-ai/dsh-client-runtime` 目前无法从 npm 安装。** 它发布的清单依赖 `@deepseek-ai/dsh-compact`,而 registry 里没有这个包(看起来是改名成了 `dsh-compaction`,发布物里的引用没跟上)。
+
+```
+npm error 404 '@deepseek-ai/dsh-compact@^0.0.1-rc.1' could not be found
+```
+
+`--legacy-peer-deps`、`--omit=peer` 都绕不过,因为它是普通依赖不是 peer。**在仓库外构建 client 插件今天要么链到一份 checkout,要么不依赖这个包** —— 它导出的 `createSnapshotStore` 只是个 20 行的 store,类型也可以本地声明。
+
+## 12. profile 的 node_modules 里没有 loader
+
+想给 loader 之类的核心包打 `pnpm patch` 时会撞上这个:
+
+```
+<home>/profiles/node_modules/@deepseek-ai/cordis-plugin-include
+  → 符号链接 → dsh 自身安装目录下的那一份
+```
+
+`healProfilesModuleFallback` 把 **dsh 自己的依赖**软链进 profiles 目录。所以 loader **不是任何 profile 的依赖**,它属于 dsh 的安装。把 `patchedDependencies` 写进 `<profile>/pnpm-workspace.yaml`,pnpm 会照常装完、不报任何错,而**补丁一行都没生效**——因为要打的目标根本不在那个工作区里。
+
+## 13. 有些事静态判定不了
 
 写工具的人容易高估静态分析能拿到多少:
 

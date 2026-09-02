@@ -830,6 +830,10 @@ export default {
     },
   ],
   outputOptions: {
+    // 这一段不能省。外壳加载插件 bundle 的方式是执行它、等它交回一个 factory,
+    // 而上面那些 external 是通过这里注入的 `require` 解析的。少了它,构建、类型、
+    // 下载全都正常,启动时才报:
+    //   bundle .../client.js loaded without registering "<pkg>" via __ModuleLoader__.load
     entryFileNames: 'client.js',
     banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(PLUGIN_ID)}, factory: (require) => {`,
     footer: 'return module.exports; } });',
