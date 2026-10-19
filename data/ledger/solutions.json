@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-08-17",
+  "solutions": [
+    {
+      "id": "sol-001",
+      "title": "网上国网余额查询能力对AI版支付宝开放技术方案",
+      "scenario": "capability-open-access",
+      "scenario_name": "能力开放/三方接入",
+      "submitted_at": "2026-08-01",
+      "status": "已上线",
+      "verdict": "建议整改",
+      "changes": [
+        { "service_id": "svc-001", "service_name": "emss-uia-channel-front", "change_type": "修改" },
+        { "service_id": "svc-002", "service_name": "emss-uia-userintegrate-front", "change_type": "修改" }
+      ]
+    },
+    {
+      "id": "sol-002",
+      "title": "网上国网缴费能力对AI版支付宝开放技术方案",
+      "scenario": "capability-open-access",
+      "scenario_name": "能力开放/三方接入",
+      "submitted_at": "2026-07-15",
+      "status": "已上线",
+      "verdict": "不通过",
+      "changes": [
+        { "service_id": "svc-001", "service_name": "emss-uia-channel-front", "change_type": "修改" },
+        { "service_id": "svc-005", "service_name": "emss-pay-channel", "change_type": "修改" }
+      ]
+    },
+    {
+      "id": "sol-003",
+      "title": "网上国网账单订阅消息推送优化技术方案",
+      "scenario": "message-push",
+      "scenario_name": "消息推送优化",
+      "submitted_at": "2026-06-20",
+      "status": "已上线",
+      "verdict": "建议整改",
+      "changes": [
+        { "service_id": "svc-006", "service_name": "emss-bill-push", "change_type": "修改" },
+        { "service_id": "svc-003", "service_name": "emss-user-center", "change_type": "修改" }
+      ]
+    },
+    {
+      "id": "sol-004",
+      "title": "负荷管理数据对外共享技术方案",
+      "scenario": "data-sharing",
+      "scenario_name": "数据共享",
+      "submitted_at": "2026-08-10",
+      "status": "评审中",
+      "verdict": "不通过",
+      "changes": [
+        { "service_id": "svc-007", "service_name": "emss-load-mgmt", "change_type": "修改" },
+        { "service_id": "svc-008", "service_name": "emss-capability-open", "change_type": "修改" }
+      ]
+    }
+  ]
+}

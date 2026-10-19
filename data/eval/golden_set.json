@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "note": "mock 评测集：ground_truth 取自真实审核意见单（8月3日-7日），方案原文为占位，待接入真实方案原文",
+  "golden_set": [
+    {
+      "id": "gs-001",
+      "solution_md": "（占位）网上国网发电企业电费账单技术方案 —— 待接入真实方案原文",
+      "ground_truth": [
+        { "rule_id": "INT-001", "dimension": "interface", "severity": "major", "desc": "方案需明确前端调用运管时对应的接口文档" },
+        { "rule_id": "DOC-001", "dimension": "documentation", "severity": "major", "desc": "方案建议补充时序图或链路图，明确前端依据接口返回数据判定是否展示电量分析模块的具体逻辑" }
+      ]
+    },
+    {
+      "id": "gs-002",
+      "solution_md": "（占位）关于福建上线随手拍的技术方案 —— 待接入真实方案原文",
+      "ground_truth": [
+        { "rule_id": "CAP-001", "dimension": "capacity", "severity": "major", "desc": "方案建议评估并补充接入福建后业务增长量数据" },
+        { "rule_id": "INT-002", "dimension": "interface", "severity": "major", "desc": "方案需进一步核实明确是否对图片上传文件大小进行限制" }
+      ]
+    },
+    {
+      "id": "gs-003",
+      "solution_md": "（占位）关于江苏退费申请工单优化为统推模式的技术方案 —— 待接入真实方案原文",
+      "ground_truth": [
+        { "rule_id": "INT-002", "dimension": "interface", "severity": "major", "desc": "方案需进一步核实其他省份是否存在同类问题，并明确查看退费申请工单详情时对应的判断逻辑" }
+      ]
+    }
+  ]
+}

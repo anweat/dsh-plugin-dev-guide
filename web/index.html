@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技术方案 AI 审查工具</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --text: #1f2329;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --primary: #2563eb;
+    --blocker: #dc2626;
+    --major: #d97706;
+    --minor: #059669;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 24px; }
+  header h1 { margin: 0; font-size: 18px; white-space: nowrap; }
+  header h1 span { color: var(--muted); font-size: 13px; font-weight: normal; }
+  .tabs { display: flex; gap: 4px; }
+  .tabs button { padding: 8px 18px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; background: transparent; color: var(--muted); }
+  .tabs button.active { background: #eef2ff; color: var(--primary); font-weight: 600; }
+  .wrap { display: flex; gap: 16px; padding: 16px 24px; min-height: calc(100vh - 62px); }
+  .panel { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; }
+  .panel h2 { margin: 0 0 12px; font-size: 15px; }
+  textarea { flex: 1; min-height: 400px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; resize: vertical; }
+  .btns { display: flex; gap: 8px; margin-top: 12px; }
+  button { padding: 9px 16px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-ghost { background: #eef2ff; color: var(--primary); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .verdict { padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 15px; margin-bottom: 12px; }
+  .verdict.pass { background: #ecfdf5; color: #047857; }
+  .verdict.fix { background: #fffbeb; color: #b45309; }
+  .verdict.reject { background: #fef2f2; color: #b91c1c; }
+  .issue { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .issue .head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 4px; color: #fff; }
+  .badge.blocker { background: var(--blocker); }
+  .badge.major { background: var(--major); }
+  .badge.minor { background: var(--minor); }
+  .badge.mod { background: #eef2ff; color: var(--primary); }
+  .badge.add { background: #ecfdf5; color: #047857; }
+  .badge.del { background: #fef2f2; color: #b91c1c; }
+  .issue .title { font-weight: 600; font-size: 14px; }
+  .issue .dim { font-size: 12px; color: var(--muted); }
+  .issue p { margin: 4px 0; font-size: 13px; }
+  .issue .label { color: var(--muted); font-size: 12px; }
+  .issue .evidence { background: #f9fafb; border-left: 3px solid var(--border); padding: 6px 10px; font-size: 12px; color: #4b5563; margin: 6px 0; }
+  .issue .suggestion { color: #1d4ed8; }
+  #status { margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .summary { background: #f9fafb; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; }
+  .summary li { margin: 4px 0; }
+
+  /* 数据运营 */
+  .stats { display: flex; gap: 12px; margin-bottom: 16px; }
+  .stat { flex: 1; background: #f9fafb; border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .stat .num { font-size: 26px; font-weight: 700; color: var(--primary); }
+  .stat .lbl { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .ledger-wrap { display: flex; gap: 16px; }
+  .ledger-col { flex: 1; min-width: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; background: #fafafa; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: #f5f7ff; }
+  .tag { font-size: 12px; padding: 2px 8px; border-radius: 4px; background: #f3f4f6; color: #4b5563; }
+  .tag.outer { background: #fff7ed; color: #c2410c; }
+  .tag.inner { background: #eff6ff; color: #1d4ed8; }
+  .detail { display: none; border-left: 3px solid var(--primary); background: #f9fafb; padding: 8px 12px; font-size: 12px; margin: 4px 0 8px; }
+  .detail.show { display: block; }
+  .detail div { margin: 3px 0; }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>技术方案 AI 审查工具 <span>· 网上国网核心系统</span></h1>
+  <div class="tabs">
+    <button class="active" id="tabBtnReview" onclick="switchTab('review')">方案审查</button>
+    <button id="tabBtnLedger" onclick="switchTab('ledger')">数据运营</button>
+    <button id="tabBtnEval" onclick="switchTab('eval')">质量评测</button>
+  </div>
+</header>
+
+<!-- 审查 Tab -->
+<div class="wrap" id="tab-review">
+  <div class="panel">
+    <h2>技术方案（Markdown）</h2>
+    <textarea id="input" placeholder="粘贴技术方案 Markdown 内容..."></textarea>
+    <div class="btns">
+      <button class="btn-ghost" onclick="loadSeed()">载入种子方案</button>
+      <button class="btn-primary" id="btnReview" onclick="doReview()">开始审查</button>
+    </div>
+    <div id="status"></div>
+  </div>
+  <div class="panel">
+    <h2>审查意见（分级）</h2>
+    <div id="result"><p style="color:#9ca3af">提交方案后，此处展示分级审查意见。</p></div>
+    <div class="btns" style="margin-top:12px">
+      <button class="btn-ghost" id="btnExport" onclick="exportResult()" disabled>导出结果</button>
+    </div>
+  </div>
+</div>
+
+<!-- 数据运营 Tab -->
+<div class="wrap" id="tab-ledger" style="display:none">
+  <div class="panel" style="flex:1">
+    <h2>数据运营 · 微服务台账与方案变更</h2>
+    <div class="stats" id="stats"></div>
+    <div class="ledger-wrap">
+      <div class="ledger-col">
+        <h2 style="font-size:14px">微服务台账</h2>
+        <table>
+          <thead><tr><th>微服务</th><th>系统</th><th>位置</th><th>调整次数</th><th>最近调整</th></tr></thead>
+          <tbody id="servicesBody"></tbody>
+        </table>
+      </div>
+      <div class="ledger-col">
+        <h2 style="font-size:14px">技术方案变更</h2>
+        <table>
+          <thead><tr><th>方案</th><th>场景</th><th>状态</th><th>变更</th></tr></thead>
+          <tbody id="solutionsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 质量评测 Tab -->
+<div class="wrap" id="tab-eval" style="display:none">
+  <div class="panel" style="flex:1">
+    <h2>质量评测 · 准确率 / 召回率</h2>
+    <div class="btns" style="margin:0 0 14px">
+      <button class="btn-primary" id="btnEval" onclick="runEval()">运行评测</button>
+      <span class="muted" id="evalNote" style="align-self:center">当前为 mock 数据演示，接入真实方案原文后即跑真实评测</span>
+    </div>
+    <div class="stats" id="evalStats"></div>
+    <div class="ledger-wrap">
+      <div class="ledger-col">
+        <h2 style="font-size:14px">各维度指标</h2>
+        <table>
+          <thead><tr><th>维度</th><th>TP</th><th>FP</th><th>FN</th><th>准确率</th><th>召回率</th><th>F1</th></tr></thead>
+          <tbody id="evalDimBody"></tbody>
+        </table>
+        <h2 style="font-size:14px;margin-top:16px">漏检明细（FN）</h2>
+        <div id="evalFn"></div>
+      </div>
+      <div class="ledger-col">
+        <h2 style="font-size:14px">误报明细（FP）</h2>
+        <div id="evalFp"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Tab 切换 ----------
+function switchTab(tab) {
+  document.getElementById('tab-review').style.display = tab === 'review' ? 'flex' : 'none';
+  document.getElementById('tab-ledger').style.display = tab === 'ledger' ? 'flex' : 'none';
+  document.getElementById('tab-eval').style.display = tab === 'eval' ? 'flex' : 'none';
+  document.getElementById('tabBtnReview').classList.toggle('active', tab === 'review');
+  document.getElementById('tabBtnLedger').classList.toggle('active', tab === 'ledger');
+  document.getElementById('tabBtnEval').classList.toggle('active', tab === 'eval');
+  if (tab === 'ledger') loadLedger();
+  if (tab === 'eval') runEval();
+}
+
+// ---------- 审查 ----------
+async function loadSeed() {
+  const resp = await fetch('/data/seed-solution.md');
+  const text = await resp.text();
+  document.getElementById('input').value = text;
+  setStatus('已载入种子方案');
+}
+
+async function doReview() {
+  const md = document.getElementById('input').value.trim();
+  if (!md) { setStatus('请先粘贴方案内容'); return; }
+  const btn = document.getElementById('btnReview');
+  btn.disabled = true; btn.textContent = '审查中...';
+  setStatus('审查中，请稍候...');
+  try {
+    const resp = await fetch('/api/review', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({markdown: md}) });
+    const data = await resp.json();
+    if (data.error) { setStatus('错误：' + data.error); return; }
+    render(data); setStatus('审查完成');
+  } catch (e) { setStatus('请求失败：' + e.message); }
+  finally { btn.disabled = false; btn.textContent = '开始审查'; }
+}
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+function render(data) {
+  const el = document.getElementById('result');
+  const verdict = data.overall_verdict || '建议整改';
+  const vcls = verdict.includes('通过') && !verdict.includes('不') ? 'pass' : (verdict.includes('不通过') ? 'reject' : 'fix');
+  let html = `<div class="verdict ${vcls}">整体结论：${verdict}</div>`;
+  if (data.summary_points && data.summary_points.length) {
+    html += '<div class="summary"><b>要点</b><ul>' + data.summary_points.map(s => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
+  }
+  const issues = data.issues || [];
+  if (!issues.length) { html += '<p style="color:#9ca3af">未发现问题。</p>'; }
+  issues.forEach((it) => {
+    const sev = it.severity || 'major';
+    const ev = (it.evidence && it.evidence.length) ? `<div class="evidence">📎 ${it.evidence.map(esc).join('<br>')}</div>` : '';
+    html += `
+      <div class="issue">
+        <div class="head"><span class="badge ${sev}">${sevText(sev)}</span><span class="title">${esc(it.title || '未命名问题')}</span><span class="dim">${esc(it.dimension || '')} · ${esc(it.rule_id || '')}</span></div>
+        <p>${esc(it.description || '')}</p>${ev}
+        ${it.suggestion ? `<p><span class="label">整改建议：</span><span class="suggestion">${esc(it.suggestion)}</span></p>` : ''}
+      </div>`;
+  });
+  el.innerHTML = html;
+  lastResult = data;
+  document.getElementById('btnExport').disabled = false;
+}
+
+// ---------- 审查结果导出 ----------
+let lastResult = null;
+
+function exportResult() {
+  if (!lastResult) return;
+  const md = toMarkdown(lastResult);
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '审查意见_' + Date.now() + '.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function toMarkdown(d) {
+  const lines = [];
+  lines.push('# 技术方案审查意见');
+  lines.push('');
+  lines.push('## 整体结论');
+  lines.push('**' + (d.overall_verdict || '') + '**');
+  lines.push('');
+  if (d.summary_points && d.summary_points.length) {
+    lines.push('## 要点');
+    d.summary_points.forEach(s => lines.push('- ' + s));
+    lines.push('');
+  }
+  lines.push('## 问题明细（共 ' + (d.issues || []).length + ' 条）');
+  (d.issues || []).forEach((it, i) => {
+    lines.push('');
+    lines.push('### ' + (i + 1) + '. [' + sevText(it.severity) + '] ' + (it.title || ''));
+    if (it.description) lines.push('- 问题：' + it.description);
+    if (it.evidence && it.evidence.length) lines.push('- 证据：' + it.evidence.join('；'));
+    if (it.suggestion) lines.push('- 建议：' + it.suggestion);
+  });
+  return lines.join('\n');
+}
+
+// ---------- 数据运营 ----------
+async function loadLedger() {
+  try {
+    const [stats, services, solutions] = await Promise.all([
+      fetch('/api/ledger/stats').then(r => r.json()),
+      fetch('/api/ledger/services').then(r => r.json()),
+      fetch('/api/ledger/solutions').then(r => r.json())
+    ]);
+    renderStats(stats);
+    renderServices(services);
+    renderSolutions(solutions);
+  } catch (e) { console.error(e); }
+}
+
+function renderStats(s) {
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="num">${s.service_count}</div><div class="lbl">微服务总数</div></div>
+    <div class="stat"><div class="num">${s.solution_count}</div><div class="lbl">技术方案数</div></div>
+    <div class="stat"><div class="num">${s.change_count}</div><div class="lbl">变更记录数</div></div>
+    <div class="stat"><div class="num">${s.changed_service_count}</div><div class="lbl">被调整微服务数</div></div>`;
+}
+
+function renderServices(services) {
+  const body = document.getElementById('servicesBody');
+  body.innerHTML = services.map(s => {
+    const pos = s.network_position === '外网' ? '<span class="tag outer">外网</span>' : '<span class="tag inner">内网</span>';
+    const hist = s.history && s.history.length
+      ? `<tr class="detail-row"><td colspan="5" class="detail" id="svc-${s.id}">${s.history.map(h =>
+          `<div>• <b>${esc(h.solution_title)}</b> <span class="muted">(${h.change_type} · ${h.submitted_at} · ${h.status})</span></div>`).join('')}</td></tr>`
+      : '';
+    return `<tr class="clickable" onclick="toggleDetail('svc-${s.id}')">
+        <td><b>${esc(s.name)}</b><br><span class="muted">${esc(s.display_name)}</span></td>
+        <td>${esc(s.system)}</td><td>${pos}</td>
+        <td>${s.change_count}</td><td class="muted">${s.last_change_at || '—'}</td>
+      </tr>${hist}`;
+  }).join('');
+}
+
+function renderSolutions(solutions) {
+  const body = document.getElementById('solutionsBody');
+  body.innerHTML = solutions.map(s => {
+    const changes = s.changes.map(c => `<span class="badge ${c.change_type === '修改' ? 'mod' : (c.change_type === '新增' ? 'add' : 'del')}">${c.change_type}</span> ${esc(c.service_name)}`).join('<br>');
+    const detail = `<tr class="detail-row"><td colspan="4" class="detail" id="sol-${s.id}">
+        <div><b>调整的微服务：</b></div>
+        ${s.changes.map(c => `<div>• ${esc(c.service_display_name || c.service_name)} <span class="muted">(${c.change_type})</span></div>`).join('')}
+      </td></tr>`;
+    return `<tr class="clickable" onclick="toggleDetail('sol-${s.id}')">
+        <td><b>${esc(s.title)}</b><br><span class="muted">${esc(s.scenario_name || '')} · ${s.submitted_at}</span></td>
+        <td>${esc(s.scenario_name || '')}</td>
+        <td>${esc(s.status)}<br><span class="muted">${esc(s.verdict)}</span></td>
+        <td>${changes}</td>
+      </tr>${detail}`;
+  }).join('');
+}
+
+function toggleDetail(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('show');
+}
+
+function sevText(s) { return s === 'blocker' ? '阻塞' : (s === 'major' ? '重要' : '建议'); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---------- 质量评测 ----------
+async function runEval() {
+  const btn = document.getElementById('btnEval');
+  btn.disabled = true; btn.textContent = '评测中...';
+  try {
+    const resp = await fetch('/api/eval/run');
+    const data = await resp.json();
+    renderEval(data);
+  } catch (e) {
+    document.getElementById('evalNote').textContent = '评测失败：' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = '运行评测';
+  }
+}
+
+function renderEval(d) {
+  const o = d.overall || {};
+  document.getElementById('evalStats').innerHTML = `
+    <div class="stat"><div class="num">${fmt(o.precision)}</div><div class="lbl">准确率 Precision</div></div>
+    <div class="stat"><div class="num">${fmt(o.recall)}</div><div class="lbl">召回率 Recall</div></div>
+    <div class="stat"><div class="num">${fmt(o.f1)}</div><div class="lbl">F1</div></div>
+    <div class="stat"><div class="num">${fmt(o.weighted_recall)}</div><div class="lbl">加权召回率</div></div>`;
+  const dims = d.by_dimension || {};
+  document.getElementById('evalDimBody').innerHTML = Object.entries(dims).map(([dim, m]) => `
+    <tr><td>${dimText(dim)}</td><td>${m.tp}</td><td>${m.fp}</td><td>${m.fn}</td><td>${fmt(m.precision)}</td><td>${fmt(m.recall)}</td><td>${fmt(m.f1)}</td></tr>`).join('');
+  const fn = d.false_negatives || [];
+  document.getElementById('evalFn').innerHTML = fn.length
+    ? fn.map(x => `<div class="issue"><b>${esc(x.rule_id)}</b> <span class="muted">${esc(x.desc || '')}</span></div>`).join('')
+    : '<p class="muted">无漏检</p>';
+  const fp = d.false_positives || [];
+  document.getElementById('evalFp').innerHTML = fp.length
+    ? fp.map(x => `<div class="issue"><b>${esc(x.rule_id)}</b> <span class="muted">方案 ${esc(x.solution_id)}</span></div>`).join('')
+    : '<p class="muted">无误报</p>';
+}
+
+function fmt(n) { return n == null ? '—' : (Math.round(n * 100) + '%'); }
+
+function dimText(d) {
+  const map = { capacity: '容量与性能', security: '安全与合规', interface: '接口与边界', channel: '渠道管控', data_sync: '数据同步', config: '可配置化', monitoring: '埋点监控', documentation: '文档完整性' };
+  return map[d] || d;
+}
+</script>
+</body>
+</html>

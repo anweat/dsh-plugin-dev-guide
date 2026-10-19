@@ -1,0 +1,138 @@
+{
+  "schema_version": "1.0",
+  "doc_type": "solution",
+  "solution": {
+    "meta": {
+      "title": "网上国网余额查询能力对AI版支付宝开放技术方案",
+      "doc_id": "seed-001",
+      "scenario": "capability-open-access",
+      "submitted_at": null,
+      "format": "markdown",
+      "sequence_diagram_format": "image",
+      "parse_note": "时序图为图片，未文本化；后续规范要求提交 Mermaid，历史图片需多模态逆向解析"
+    },
+    "resource_changes": {
+      "columns": ["序号", "资源名称", "变更类型", "名称", "内外网位置", "数据存储", "备注"],
+      "rows": [
+        { "seq": 1, "resource_type": "微应用", "change_type": null, "name": null, "network_position": null, "data_storage": null, "remark": null },
+        { "seq": 2, "resource_type": "微服务", "change_type": "修改", "name": "emss-uia-channel-front", "network_position": "外网", "data_storage": null, "remark": null },
+        { "seq": 3, "resource_type": "微服务", "change_type": "修改", "name": "emss-uia-userintegrate-front", "network_position": "外网", "data_storage": null, "remark": null },
+        { "seq": 4, "resource_type": "数据表", "change_type": null, "name": null, "network_position": null, "data_storage": null, "remark": null },
+        { "seq": 5, "resource_type": "消息队列", "change_type": null, "name": null, "network_position": null, "data_storage": null, "remark": null },
+        { "seq": 6, "resource_type": "redis", "change_type": null, "name": null, "network_position": null, "data_storage": null, "remark": null }
+      ],
+      "changed_services": ["emss-uia-channel-front", "emss-uia-userintegrate-front"]
+    },
+    "background": {
+      "summary": "为贯彻落实国网营销部关于印发2026年「人工智能+营销专业」工作安排的通知要求，探索开展网上国网智能交互能力建设。网上国网余额查询能力通过API及在支付宝光华平台配置接口转化成MCP服务形式对AI版支付宝开放，整合支付宝已有生活缴费能力，实现用户余额查询需求。",
+      "policy_basis": "国网营销部2026年「人工智能+营销专业」工作安排",
+      "goal": "余额查询能力对AI版支付宝开放，整合生活缴费能力，实现余额查询"
+    },
+    "technical_approach": {
+      "access_methods": [
+        {
+          "type": "用户鉴权",
+          "flow": "用户中心依据客户端获取阿宝的一次性授权码，调用阿宝服务端获取openId；通过openId换取阿宝手机号后，校验是否已完成国网内部授权。已完成则一键登录；未授权则根据手机号判断是否已注册，未注册则一键注册，完成后建立注册信息与三方openId授权关系，最终完成一键登录。",
+          "note": "阿宝用户鉴权链路与目前支付宝鉴权一致。"
+        },
+        {
+          "type": "查询余额",
+          "flow": "网上国网根据AI支付宝内嵌服务卡片开发规范开发余额卡片（H5页面），通过网上国网能力开放平台调用网上国网后端查询业务数据；卡片发版静态页面至外网环境，由支付宝「阿宝」智能体通过API接口调用网上国网余额卡片显示余额数据。AI支付宝调用前端卡片时，需在支付宝光华平台进行MCP服务托管模式配置，配置后支付宝侧自动将API接口转化为SPI接口并带有MCP服务。"
+        }
+      ],
+      "sequence_diagrams": [
+        { "name": "用户中心授权时序图", "format": "image", "content": null },
+        { "name": "AI支付宝接入查询余额功能时序图", "format": "image", "content": null },
+        { "name": "重新触发用户授权核验的时序图", "format": "image", "content": null }
+      ]
+    },
+    "interfaces": [
+      {
+        "name": "小程序一键登录",
+        "category": "用户授权接口",
+        "endpoint": "emss-uia-channel-front/member/uc13/c44/f01",
+        "caller": "网上国网",
+        "server": "用户中心",
+        "protocol": "Restful",
+        "input_params": [
+          { "name": "uscInfo", "field": "uscInfo", "desc": "公共请求参数", "type": "Object", "required": "Y", "category": "公共请求参数" },
+          { "name": "tenant", "field": "tenant", "desc": "租户名称", "type": "String", "required": "Y", "category": "公共请求参数" },
+          { "name": "member", "field": "member", "desc": "渠道编号，3389：阿宝", "type": "String", "required": "Y", "category": "公共请求参数" },
+          { "name": "quInfo", "field": "quInfo", "desc": "业务请求参数", "type": "Object", "required": "Y", "category": "业务请求参数" },
+          { "name": "pidCode", "field": "pidCode", "desc": "accountType为18时填写千问方auth_code，用于获取openId", "type": "String", "required": "Y", "category": "业务请求参数" },
+          { "name": "phoneCode", "field": "phoneCode", "desc": "accountType为18时填写千问方auth_code，用于获取手机号", "type": "String", "required": "Y", "category": "业务请求参数" },
+          { "name": "accountType", "field": "accountType", "desc": "必填，19=阿宝", "type": "String", "required": "Y", "category": "业务请求参数" },
+          { "name": "appCode", "field": "appCode", "desc": "渠道编号，3389：阿宝", "type": "String", "required": "Y", "category": "业务请求参数" },
+          { "name": "proNo", "field": "proNo", "desc": "省码，默认00000", "type": "String", "required": "Y", "category": "业务请求参数" },
+          { "name": "addressProvince", "field": "addressProvince", "desc": "省市", "type": "String", "required": "N", "category": "业务请求参数" },
+          { "name": "addressCity", "field": "addressCity", "desc": "地市", "type": "String", "required": "N", "category": "业务请求参数" },
+          { "name": "addressRegion", "field": "addressRegion", "desc": "县区", "type": "String", "required": "N", "category": "业务请求参数" }
+        ],
+        "output_params": [
+          { "field": "resultCode", "desc": "返回码（0000登录成功/0100登录失败/0101手机号匹配失败需解绑/0200服务异常/0201无此授权信息/0202接口未授权/0203无用户信息请注册/0204业务失败/0205获取信息失败/0206超出范围/0207解密异常/0208获取信息为空/0300参数异常）", "type": "String", "required": "Y" },
+          { "field": "resultMessage", "desc": "返回消息", "type": "String", "required": "Y" },
+          { "field": "timeStamp", "desc": "时间戳", "type": "String", "required": "Y" },
+          { "field": "token", "desc": "令牌", "type": "String", "required": "Y" },
+          { "field": "code", "desc": "解绑令牌码（6位），返回码0101时返回", "type": "String", "required": "Y/N" },
+          { "field": "oldMobile", "desc": "现绑定手机号，格式131****0001，返回码0101时返回", "type": "String", "required": "Y/N" },
+          { "field": "newMobile", "desc": "将绑定手机号，格式131****0001，返回码0101时返回", "type": "String", "required": "Y/N" }
+        ]
+      },
+      {
+        "name": "会员信息获取（authCode）",
+        "category": "前端与阿宝交互接口（前端提供）",
+        "endpoint": "/api/v2/session/bind",
+        "doc_link": "https://opendocs.alipay.com/open/02xtl8?pathHash=e39a95b3",
+        "caller": "前端",
+        "server": "支付宝服务端",
+        "input_params": [
+          { "name": "authCode", "field": "authCode", "desc": "用户实名授权code", "type": "String", "required": "Y", "example": "OC201809253000000393900404029253" },
+          { "name": "appId", "field": "appId", "desc": "应用标识", "type": "String", "required": "Y", "example": "2021000000000000" }
+        ],
+        "output_params": [
+          { "field": "code", "desc": "统一错误码，0=正常，其他=登录失败", "type": "string", "required": "Y" },
+          { "field": "errmsg", "desc": "code 的错误说明", "type": "string", "required": "Y" }
+        ]
+      },
+      {
+        "name": "首页余额查询接口",
+        "category": "查询余额业务数据接口",
+        "endpoint": "见附件2",
+        "caller": "前端卡片",
+        "server": "网上国网后端",
+        "note": "需支付宝阿宝侧在调用接口时，在渠道标识字段中传输固定的渠道标识"
+      }
+    ],
+    "login_flow": [
+      "前端在阿宝聊天界面通过 JSAPI ap.getAuthCode 接口唤起半屏授权浮层",
+      "用户确认授权后 API 返回 auth_code；前端通过能力开放平台接口将 auth_code 传递至用户中心，用户中心与支付宝服务端交互获取用户信息，完成国网内部登录逻辑，返回前端基本用户信息",
+      "用户登录/注册国网账号成功后，前端调用查询余额的业务数据接口，将数据呈现在前端卡片上"
+    ],
+    "data_planning": {
+      "data_flow": "与网上国网现有数据架构保持一致",
+      "data_storage": "与网上国网现有数据架构保持一致",
+      "growth_estimation": "支付宝智能体通过授权方式给网上国网带来新增用户，上线前期会带来大量新增用户"
+    },
+    "implementation_plan": [
+      { "milestone": "产品设计确认", "time": "2026年7月" },
+      { "milestone": "开发、测试", "time": "2026年8月" },
+      { "milestone": "正式环境配置及上线", "time": "2026年9月底" }
+    ],
+    "launch_target": {
+      "users": "使用支付宝「阿宝」查询余额的用户"
+    },
+    "resource_assessment": {
+      "summary": "静态资源H5卡片部署，初步评估无需扩容资源",
+      "has_quantitative_basis": false
+    },
+    "risk_assessment": {
+      "summary": "无暴露风险，支付宝智能体只与前端卡片做交互，不调用国网数据",
+      "has_verification_basis": false
+    },
+    "attachments": [
+      { "name": "附件1", "desc": "网上国网余额查询能力对AI版支付宝开放的UE图", "type": "image" },
+      { "name": "附件2", "desc": "网上国网余额查询接口文档", "type": "doc" },
+      { "name": "附件3", "desc": "支付宝提供的MCP服务托管配置，以及卡片、接口等研发流程文档", "type": "doc", "url": "https://alipay-solution-tech.yuque.com/org-wiki-alipay-solution-tech-gbv0n2/kgr2pg/ev1h48468rqq91fe" }
+    ]
+  }
+}
