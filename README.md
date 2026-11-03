@@ -5,6 +5,9 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+> [!WARNING]
+> **版本基线已过时**：本仓库内容锁定在 `dsh-v0.1.1-rc.2`。此后已有破坏性变更：`engines.dsh` 强制校验（0.2.1-alpha.4 起）、`ctx.menus` → `ctx.contextMenus`（0.2.2-alpha.3）、Node `>=24.9`（0.2.2-alpha.2 起）；另有 `@deepseek-ai/dsh-client-runtime` 在 0.1.2-alpha.1 移除、Typert codec 在 0.1.6-alpha.2 改为 `create()`。按本文操作前请先读官方 [upgrade-guide](https://github.com/deepseek-ai/deepseek-harness/tree/master/docs/upgrade-guide)；文中 API 示例不保证在 `0.2.2-alpha.3` 上可用。
+
 ## 目录
 
 | 内容 | 路径 | 说明 |
